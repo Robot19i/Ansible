@@ -1,0 +1,44 @@
+---
+- hosts: test
+  gather_facts: no
+  user: makar
+  become: true
+  tasks:
+  - name: install httpd
+    apt:
+      name: apache2
+      state: latest
+
+  - name: remove conf.d directory
+    file:
+      path: /etc/apache2/conf.d
+      state: absent
+
+  - name: creating conf.d
+    file:
+      path: /etc/apache2/conf.d
+      state: directory
+
+  - name: add new virtual host config
+    copy:
+      src: /etc/ansible/playbooks/files/vhost.conf
+      dest: /etc/apache2/sites-enabled/host1.conf
+      remote_src: yes
+    notify: restart_httpd
+
+  - name: create httpdpasswd
+    command: 'htpasswd -b -c /var/www/html/.htpasswd user1 q1w2e3'
+
+  - name: create content
+    copy:
+      src: /etc/ansible/playbooks/files/content.html
+      dest: /var/www/html/index.html
+      remote_src: yes
+
+  handlers:
+  - name: restart apache2
+    listen: restart_httpd
+    service:
+      name: apache2
+      state: restarted
+
